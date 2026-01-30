@@ -10,7 +10,7 @@ from flask import Flask, render_template, request, jsonify
 app = Flask(__name__)
 
 # Configuration
-PROMPT_SUFFIX = os.environ.get("PROMPT_SUFFIX", "Please provide a clear and concise response.")
+PROMPT_SUFFIX = os.environ.get("PROMPT_SUFFIX", "Use deep research to verify the sources. Don't use anything that is not verified.\n\nFlag if the archive exists and add links to the script of the sources so an archive producer can verify.")
 
 # Mock responses for testing
 MOCK_RESPONSES = [
