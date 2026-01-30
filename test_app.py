@@ -7,7 +7,7 @@ import time
 import random
 import uuid
 from datetime import datetime
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, Response
 
 app = Flask(__name__)
 
@@ -69,6 +69,9 @@ Archive producers should verify content against original broadcasts.""",
 All links have been tested and are accessible. Documents should be downloaded and preserved locally."""
 ]
 
+# Store mock documents in memory for the test app
+MOCK_DOCUMENTS_STORE = {}
+
 
 @app.route("/")
 def index():
@@ -96,24 +99,33 @@ def query():
         mock_response = random.choice(MOCK_RESPONSES)
         query_id = datetime.now().strftime("%Y%m%d_%H%M%S") + "_" + uuid.uuid4().hex[:8]
 
-        # Mock downloaded documents
+        # Mock downloaded documents (as PDFs)
         mock_documents = [
             {
                 "url": "https://www.bbc.co.uk/archive/collections",
-                "stored_path": f"{query_id}/abc123_collections.html",
-                "gcs_uri": f"gs://test-bucket/{query_id}/abc123_collections.html",
-                "filename": "collections.html",
-                "content_type": "text/html",
-                "size_bytes": 45678,
+                "title": "BBC Archive Collections",
+                "pdf_path": f"{query_id}/abc123_collections.pdf",
+                "gcs_uri": f"gs://test-bucket/{query_id}/abc123_collections.pdf",
+                "filename": "collections.pdf",
+                "size_bytes": 145678,
                 "status": "success"
             },
             {
                 "url": "https://www.nationalarchives.gov.uk/",
-                "stored_path": f"{query_id}/def456_index.html",
-                "gcs_uri": f"gs://test-bucket/{query_id}/def456_index.html",
-                "filename": "index.html",
-                "content_type": "text/html",
-                "size_bytes": 32145,
+                "title": "National Archives",
+                "pdf_path": f"{query_id}/def456_nationalarchives.pdf",
+                "gcs_uri": f"gs://test-bucket/{query_id}/def456_nationalarchives.pdf",
+                "filename": "nationalarchives.pdf",
+                "size_bytes": 232145,
+                "status": "success"
+            },
+            {
+                "url": "https://archive.org/",
+                "title": "Internet Archive",
+                "pdf_path": f"{query_id}/ghi789_archive.pdf",
+                "gcs_uri": f"gs://test-bucket/{query_id}/ghi789_archive.pdf",
+                "filename": "archive.pdf",
+                "size_bytes": 89432,
                 "status": "success"
             },
             {
@@ -122,6 +134,11 @@ def query():
                 "error": "404 Not Found"
             }
         ]
+
+        # Store mock PDF content for viewing
+        for doc in mock_documents:
+            if doc.get("status") == "success":
+                MOCK_DOCUMENTS_STORE[doc["pdf_path"]] = create_mock_pdf(doc["title"], doc["url"])
 
         return jsonify({
             "response": mock_response,
@@ -134,6 +151,64 @@ def query():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+def create_mock_pdf(title, url):
+    """Create a simple mock PDF-like content for testing."""
+    # In test mode, we'll just return HTML that looks like a document
+    return f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>{title}</title>
+        <style>
+            body {{ font-family: Arial, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; }}
+            h1 {{ color: #333; border-bottom: 2px solid #2563eb; padding-bottom: 10px; }}
+            .meta {{ color: #666; margin-bottom: 20px; }}
+            .content {{ line-height: 1.8; }}
+            .notice {{ background: #f0f9ff; border: 1px solid #bae6fd; padding: 15px; border-radius: 8px; margin-top: 20px; }}
+        </style>
+    </head>
+    <body>
+        <h1>{title}</h1>
+        <p class="meta">Source: <a href="{url}">{url}</a></p>
+        <div class="content">
+            <p>This is a mock PDF document generated for testing purposes.</p>
+            <p>In production, this would be the actual PDF conversion of the webpage content from the source URL.</p>
+            <p>The document has been archived and stored in the GCS bucket for verification by archive producers.</p>
+        </div>
+        <div class="notice">
+            <strong>Test Mode Notice:</strong> This is a simulated document.
+            Deploy to production to see actual PDF conversions of source documents.
+        </div>
+    </body>
+    </html>
+    """.encode()
+
+
+@app.route("/document/<path:blob_path>")
+def get_document(blob_path):
+    """Serve a mock document."""
+    if blob_path in MOCK_DOCUMENTS_STORE:
+        return Response(
+            MOCK_DOCUMENTS_STORE[blob_path],
+            mimetype='text/html',
+            headers={'Content-Disposition': f'inline; filename="{blob_path.split("/")[-1]}"'}
+        )
+    return jsonify({"error": "Document not found"}), 404
+
+
+@app.route("/download/<path:blob_path>")
+def download_document(blob_path):
+    """Download a mock document."""
+    if blob_path in MOCK_DOCUMENTS_STORE:
+        filename = blob_path.split("/")[-1]
+        return Response(
+            MOCK_DOCUMENTS_STORE[blob_path],
+            mimetype='text/html',
+            headers={'Content-Disposition': f'attachment; filename="{filename}"'}
+        )
+    return jsonify({"error": "Document not found"}), 404
 
 
 @app.route("/health")

@@ -13,6 +13,7 @@
     --error-text: #dc2626;
     --code-bg: #f1f5f9;
     --success-color: #10b981;
+    --panel-bg: #f8fafc;
 }
 
 * {
@@ -29,10 +30,8 @@ body {
     min-height: 100vh;
 }
 
-.container {
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 2rem;
+/* App Container */
+.app-container {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
@@ -41,24 +40,262 @@ body {
 /* Header */
 header {
     text-align: center;
-    margin-bottom: 2rem;
+    padding: 1.5rem 2rem;
+    background: var(--card-bg);
+    border-bottom: 1px solid var(--border-color);
 }
 
 header h1 {
-    font-size: 2rem;
+    font-size: 1.75rem;
     font-weight: 700;
     color: var(--text-color);
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.25rem;
 }
 
 .subtitle {
     color: var(--text-muted);
-    font-size: 1rem;
+    font-size: 0.9rem;
 }
 
-/* Main Content */
-main {
+/* Main Content - Two Column Layout */
+.main-content {
+    display: flex;
     flex: 1;
+    overflow: hidden;
+}
+
+.left-panel {
+    flex: 1;
+    padding: 1.5rem 2rem;
+    overflow-y: auto;
+    max-width: 65%;
+}
+
+.right-panel {
+    width: 35%;
+    min-width: 350px;
+    background: var(--panel-bg);
+    border-left: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* Panel Header */
+.panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.5rem;
+    background: var(--card-bg);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.panel-header h2 {
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.docs-badge {
+    background: var(--primary-color);
+    color: white;
+    padding: 0.2rem 0.6rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+/* Documents Empty State */
+.documents-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 2rem;
+    color: var(--text-muted);
+    text-align: center;
+    flex: 1;
+}
+
+.documents-empty svg {
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.documents-empty p {
+    font-size: 0.9rem;
+}
+
+/* Documents List */
+.documents-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+}
+
+/* Document Card */
+.document-card {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.5rem;
+    transition: box-shadow 0.2s, border-color 0.2s;
+}
+
+.document-card:hover {
+    border-color: var(--primary-color);
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.1);
+}
+
+.doc-icon {
+    flex-shrink: 0;
+    color: var(--primary-color);
+}
+
+.doc-content {
+    flex: 1;
+    min-width: 0;
+    cursor: pointer;
+}
+
+.doc-title {
+    font-weight: 500;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.doc-meta {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 0.25rem;
+}
+
+.doc-size, .doc-type {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.doc-type {
+    background: var(--code-bg);
+    padding: 0.1rem 0.4rem;
+    border-radius: 4px;
+}
+
+.doc-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+.action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--card-bg);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+}
+
+.action-btn:hover {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+    background: var(--code-bg);
+}
+
+/* Failed Docs Section */
+.failed-docs-section {
+    margin-top: 1rem;
+    border: 1px solid var(--error-border);
+    border-radius: 8px;
+    background: var(--error-bg);
+}
+
+.failed-docs-section summary {
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: var(--error-text);
+}
+
+.failed-docs-list {
+    list-style: none;
+    padding: 0 1rem 1rem;
+}
+
+.failed-docs-list li {
+    margin-bottom: 0.5rem;
+    font-size: 0.8rem;
+}
+
+.failed-docs-list a {
+    color: var(--primary-color);
+    word-break: break-all;
+}
+
+.error-reason {
+    display: block;
+    color: var(--error-text);
+    font-size: 0.75rem;
+    margin-top: 0.25rem;
+}
+
+/* PDF Viewer */
+.pdf-viewer-container {
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--card-bg);
+    z-index: 10;
+}
+
+.pdf-viewer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    background: var(--code-bg);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.pdf-viewer-header span {
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--text-muted);
+    line-height: 1;
+    padding: 0.25rem 0.5rem;
+}
+
+.close-btn:hover {
+    color: var(--text-color);
+}
+
+.pdf-viewer {
+    flex: 1;
+    border: none;
+    width: 100%;
 }
 
 /* Input Section */
@@ -135,7 +372,7 @@ textarea::placeholder {
 }
 
 /* Submit Button */
-button {
+button#submit-btn {
     width: 100%;
     padding: 1rem 1.5rem;
     background: var(--primary-color);
@@ -152,15 +389,15 @@ button {
     gap: 0.5rem;
 }
 
-button:hover:not(:disabled) {
+button#submit-btn:hover:not(:disabled) {
     background: var(--primary-hover);
 }
 
-button:active:not(:disabled) {
+button#submit-btn:active:not(:disabled) {
     transform: scale(0.98);
 }
 
-button:disabled {
+button#submit-btn:disabled {
     opacity: 0.7;
     cursor: not-allowed;
 }
@@ -280,103 +517,6 @@ button:disabled {
     color: var(--text-muted);
 }
 
-/* Documents Section */
-.documents-section {
-    margin-top: 1.5rem;
-    padding-top: 1.5rem;
-    border-top: 1px solid var(--border-color);
-}
-
-.documents-section h3 {
-    font-size: 1.1rem;
-    margin-bottom: 0.75rem;
-    color: var(--text-color);
-}
-
-.documents-info {
-    font-size: 0.875rem;
-    color: var(--text-muted);
-    margin-bottom: 1rem;
-}
-
-.documents-info code {
-    background: var(--code-bg);
-    padding: 0.2rem 0.5rem;
-    border-radius: 4px;
-    font-size: 0.8rem;
-}
-
-.documents-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
-.document-item {
-    background: var(--code-bg);
-    border-radius: 8px;
-    padding: 0.75rem 1rem;
-    margin-bottom: 0.5rem;
-    border-left: 3px solid var(--success-color);
-}
-
-.document-item.error {
-    border-left-color: var(--error-text);
-    background: var(--error-bg);
-}
-
-.doc-info {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 0.25rem;
-}
-
-.doc-filename {
-    font-weight: 600;
-    color: var(--text-color);
-}
-
-.doc-filename.doc-error {
-    color: var(--error-text);
-}
-
-.doc-size {
-    font-size: 0.8rem;
-    color: var(--text-muted);
-}
-
-.doc-details {
-    display: flex;
-    gap: 1rem;
-    align-items: center;
-    flex-wrap: wrap;
-}
-
-.doc-link {
-    font-size: 0.8rem;
-    color: var(--primary-color);
-    text-decoration: none;
-}
-
-.doc-link:hover {
-    text-decoration: underline;
-}
-
-.doc-gcs {
-    font-size: 0.75rem;
-    background: var(--card-bg);
-    padding: 0.2rem 0.5rem;
-    border-radius: 4px;
-    color: var(--text-muted);
-    word-break: break-all;
-}
-
-.doc-error-msg {
-    font-size: 0.8rem;
-    color: var(--error-text);
-}
-
 /* Full Prompt Section */
 .full-prompt-section {
     margin-top: 1.5rem;
@@ -418,19 +558,45 @@ button:disabled {
 /* Footer */
 footer {
     text-align: center;
-    padding: 1.5rem 0;
+    padding: 1rem 0;
     color: var(--text-muted);
     font-size: 0.875rem;
+    background: var(--card-bg);
+    border-top: 1px solid var(--border-color);
+}
+
+/* Right Panel Relative Position for PDF Viewer */
+.right-panel {
+    position: relative;
 }
 
 /* Responsive */
+@media (max-width: 1024px) {
+    .main-content {
+        flex-direction: column;
+    }
+
+    .left-panel {
+        max-width: 100%;
+        padding: 1rem;
+    }
+
+    .right-panel {
+        width: 100%;
+        min-width: 0;
+        border-left: none;
+        border-top: 1px solid var(--border-color);
+        max-height: 50vh;
+    }
+}
+
 @media (max-width: 640px) {
-    .container {
+    header {
         padding: 1rem;
     }
 
     header h1 {
-        font-size: 1.5rem;
+        font-size: 1.25rem;
     }
 
     .input-section,

@@ -8,63 +8,86 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
-    <div class="container">
+    <div class="app-container">
         <header>
             <h1>AI Query Interface</h1>
-            <p class="subtitle">Powered by Gemini 2.5 Pro</p>
+            <p class="subtitle">Powered by Gemini 2.0 Flash</p>
         </header>
 
-        <main>
-            <section class="input-section">
-                <label for="prompt">Enter your prompt:</label>
-                <textarea
-                    id="prompt"
-                    placeholder="Type your question or prompt here..."
-                    rows="4"
-                ></textarea>
+        <div class="main-content">
+            <!-- Left Panel: Query and Response -->
+            <div class="left-panel">
+                <section class="input-section">
+                    <label for="prompt">Enter your research query:</label>
+                    <textarea
+                        id="prompt"
+                        placeholder="Type your research question here..."
+                        rows="4"
+                    ></textarea>
 
-                <details class="suffix-section">
-                    <summary>View suffix text (appended to all prompts)</summary>
-                    <div class="suffix-content">
-                        <code>{{ suffix_text }}</code>
-                    </div>
-                </details>
+                    <details class="suffix-section">
+                        <summary>View suffix text (appended to all prompts)</summary>
+                        <div class="suffix-content">
+                            <code>{{ suffix_text }}</code>
+                        </div>
+                    </details>
 
-                <button id="submit-btn" onclick="submitQuery()">
-                    <span class="btn-text">Send Query</span>
-                    <span class="btn-loading" style="display: none;">
-                        <span class="spinner"></span>
-                        Processing...
-                    </span>
-                </button>
-            </section>
-
-            <section id="response-section" class="response-section" style="display: none;">
-                <h2>Response</h2>
-                <div id="response-content" class="response-content"></div>
-
-                <section id="documents-section" class="documents-section" style="display: none;">
-                    <h3>Downloaded Sources</h3>
-                    <p class="documents-info">
-                        <span id="docs-count">0</span> documents archived to
-                        <code id="docs-bucket"></code>
-                    </p>
-                    <ul id="documents-list" class="documents-list"></ul>
+                    <button id="submit-btn" onclick="submitQuery()">
+                        <span class="btn-text">Research</span>
+                        <span class="btn-loading" style="display: none;">
+                            <span class="spinner"></span>
+                            Researching & Downloading Sources...
+                        </span>
+                    </button>
                 </section>
 
-                <details class="full-prompt-section">
-                    <summary>View full prompt sent</summary>
-                    <pre id="full-prompt"></pre>
-                </details>
-            </section>
+                <section id="response-section" class="response-section" style="display: none;">
+                    <h2>Research Results</h2>
+                    <div id="response-content" class="response-content"></div>
 
-            <section id="error-section" class="error-section" style="display: none;">
-                <div class="error-content">
-                    <strong>Error:</strong>
-                    <span id="error-message"></span>
+                    <details class="full-prompt-section">
+                        <summary>View full prompt sent</summary>
+                        <pre id="full-prompt"></pre>
+                    </details>
+                </section>
+
+                <section id="error-section" class="error-section" style="display: none;">
+                    <div class="error-content">
+                        <strong>Error:</strong>
+                        <span id="error-message"></span>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Right Panel: Downloaded Documents -->
+            <div class="right-panel" id="documents-panel">
+                <div class="panel-header">
+                    <h2>Archived Sources</h2>
+                    <span id="docs-count" class="docs-badge">0</span>
                 </div>
-            </section>
-        </main>
+
+                <div id="documents-empty" class="documents-empty">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                        <polyline points="10 9 9 9 8 9"></polyline>
+                    </svg>
+                    <p>Source documents will appear here after research</p>
+                </div>
+
+                <div id="documents-list" class="documents-list"></div>
+
+                <div id="pdf-viewer-container" class="pdf-viewer-container" style="display: none;">
+                    <div class="pdf-viewer-header">
+                        <span id="pdf-viewer-title">Document Preview</span>
+                        <button onclick="closePdfViewer()" class="close-btn">&times;</button>
+                    </div>
+                    <iframe id="pdf-viewer" class="pdf-viewer"></iframe>
+                </div>
+            </div>
+        </div>
 
         <footer>
             <p>AI Query Interface &copy; 2025</p>
@@ -72,6 +95,8 @@
     </div>
 
     <script>
+        let currentDocuments = [];
+
         async function submitQuery() {
             const promptInput = document.getElementById('prompt');
             const submitBtn = document.getElementById('submit-btn');
@@ -81,7 +106,9 @@
             const responseContent = document.getElementById('response-content');
             const fullPrompt = document.getElementById('full-prompt');
             const errorSection = document.getElementById('error-section');
-            const errorMessage = document.getElementById('error-message');
+            const documentsEmpty = document.getElementById('documents-empty');
+            const documentsList = document.getElementById('documents-list');
+            const docsCount = document.getElementById('docs-count');
 
             const prompt = promptInput.value.trim();
 
@@ -96,6 +123,10 @@
             btnLoading.style.display = 'inline-flex';
             errorSection.style.display = 'none';
             responseSection.style.display = 'none';
+            documentsList.innerHTML = '';
+            documentsEmpty.style.display = 'flex';
+            docsCount.textContent = '0';
+            closePdfViewer();
 
             try {
                 const response = await fetch('/query', {
@@ -118,54 +149,40 @@
                 responseSection.style.display = 'block';
 
                 // Display downloaded documents
-                const documentsSection = document.getElementById('documents-section');
-                const documentsList = document.getElementById('documents-list');
-                const docsCount = document.getElementById('docs-count');
-                const docsBucket = document.getElementById('docs-bucket');
-
-                if (data.documents && data.documents.length > 0) {
-                    documentsList.innerHTML = '';
+                currentDocuments = data.documents || [];
+                if (currentDocuments.length > 0) {
+                    documentsEmpty.style.display = 'none';
                     let successCount = 0;
 
-                    data.documents.forEach(doc => {
-                        const li = document.createElement('li');
-                        li.className = 'document-item ' + (doc.status === 'success' ? 'success' : 'error');
-
+                    currentDocuments.forEach((doc, index) => {
                         if (doc.status === 'success') {
                             successCount++;
-                            li.innerHTML = `
-                                <div class="doc-info">
-                                    <span class="doc-filename">${doc.filename}</span>
-                                    <span class="doc-size">${formatBytes(doc.size_bytes)}</span>
-                                </div>
-                                <div class="doc-details">
-                                    <a href="${doc.url}" target="_blank" class="doc-link">Original</a>
-                                    <code class="doc-gcs">${doc.gcs_uri}</code>
-                                </div>
-                            `;
-                        } else {
-                            li.innerHTML = `
-                                <div class="doc-info">
-                                    <span class="doc-filename doc-error">Failed to download</span>
-                                </div>
-                                <div class="doc-details">
-                                    <a href="${doc.url}" target="_blank" class="doc-link">${doc.url}</a>
-                                    <span class="doc-error-msg">${doc.error || 'Unknown error'}</span>
-                                </div>
-                            `;
+                            const docEl = createDocumentCard(doc, index);
+                            documentsList.appendChild(docEl);
                         }
-                        documentsList.appendChild(li);
                     });
 
-                    docsCount.textContent = successCount;
-                    docsBucket.textContent = data.bucket || 'N/A';
-                    documentsSection.style.display = 'block';
-                } else {
-                    documentsSection.style.display = 'none';
-                }
+                    // Show failed downloads in a collapsed section
+                    const failedDocs = currentDocuments.filter(d => d.status === 'error');
+                    if (failedDocs.length > 0) {
+                        const failedSection = document.createElement('details');
+                        failedSection.className = 'failed-docs-section';
+                        failedSection.innerHTML = `
+                            <summary>${failedDocs.length} source(s) could not be downloaded</summary>
+                            <ul class="failed-docs-list">
+                                ${failedDocs.map(d => `
+                                    <li>
+                                        <a href="${d.url}" target="_blank">${d.url}</a>
+                                        <span class="error-reason">${d.error || 'Unknown error'}</span>
+                                    </li>
+                                `).join('')}
+                            </ul>
+                        `;
+                        documentsList.appendChild(failedSection);
+                    }
 
-                // Scroll to response
-                responseSection.scrollIntoView({ behavior: 'smooth' });
+                    docsCount.textContent = successCount;
+                }
 
             } catch (error) {
                 showError(error.message);
@@ -177,6 +194,65 @@
             }
         }
 
+        function createDocumentCard(doc, index) {
+            const card = document.createElement('div');
+            card.className = 'document-card';
+            card.innerHTML = `
+                <div class="doc-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                    </svg>
+                </div>
+                <div class="doc-content">
+                    <div class="doc-title">${doc.title || doc.filename}</div>
+                    <div class="doc-meta">
+                        <span class="doc-size">${formatBytes(doc.size_bytes)}</span>
+                        <span class="doc-type">${doc.filename.split('.').pop().toUpperCase()}</span>
+                    </div>
+                </div>
+                <div class="doc-actions">
+                    <button onclick="viewDocument('${doc.pdf_path}')" class="action-btn view-btn" title="View">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                    </button>
+                    <a href="/download/${doc.pdf_path}" class="action-btn download-btn" title="Download">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                    </a>
+                </div>
+            `;
+
+            // Click card to view
+            card.querySelector('.doc-content').addEventListener('click', () => {
+                viewDocument(doc.pdf_path);
+            });
+
+            return card;
+        }
+
+        function viewDocument(path) {
+            const viewer = document.getElementById('pdf-viewer');
+            const container = document.getElementById('pdf-viewer-container');
+            const title = document.getElementById('pdf-viewer-title');
+
+            viewer.src = `/document/${path}`;
+            title.textContent = path.split('/').pop();
+            container.style.display = 'flex';
+        }
+
+        function closePdfViewer() {
+            const viewer = document.getElementById('pdf-viewer');
+            const container = document.getElementById('pdf-viewer-container');
+            viewer.src = '';
+            container.style.display = 'none';
+        }
+
         function showError(message) {
             const errorSection = document.getElementById('error-section');
             const errorMessage = document.getElementById('error-message');
@@ -185,7 +261,7 @@
         }
 
         function formatBytes(bytes) {
-            if (bytes === 0) return '0 B';
+            if (!bytes || bytes === 0) return '0 B';
             const k = 1024;
             const sizes = ['B', 'KB', 'MB', 'GB'];
             const i = Math.floor(Math.log(bytes) / Math.log(k));
