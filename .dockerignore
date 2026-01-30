@@ -1,0 +1,11 @@
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+.git/
+.gitignore
+README.md
+test_app.py
+*.md
+.env
+.env.local
