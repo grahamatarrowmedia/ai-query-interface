@@ -4,7 +4,7 @@ steps:
     args:
       - 'build'
       - '-t'
-      - 'us-central1-docker.pkg.dev/$PROJECT_ID/cloud-run/ai-query-interface:$COMMIT_SHA'
+      - 'us-central1-docker.pkg.dev/$PROJECT_ID/cloud-run/ai-query-interface:latest'
       - '-t'
       - 'us-central1-docker.pkg.dev/$PROJECT_ID/cloud-run/ai-query-interface:latest'
       - '.'
@@ -21,7 +21,7 @@ steps:
       - 'deploy'
       - 'ai-query-interface'
       - '--image'
-      - 'us-central1-docker.pkg.dev/$PROJECT_ID/cloud-run/ai-query-interface:$COMMIT_SHA'
+      - 'us-central1-docker.pkg.dev/$PROJECT_ID/cloud-run/ai-query-interface:latest'
       - '--region'
       - 'us-central1'
       - '--platform'
@@ -33,7 +33,6 @@ steps:
       - '512Mi'
 
 images:
-  - 'us-central1-docker.pkg.dev/$PROJECT_ID/cloud-run/ai-query-interface:$COMMIT_SHA'
   - 'us-central1-docker.pkg.dev/$PROJECT_ID/cloud-run/ai-query-interface:latest'
 
 options:
