@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Query Interface</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>AI Query Interface</h1>
+            <p class="subtitle">Powered by Gemini 2.5 Pro</p>
+        </header>
+
+        <main>
+            <section class="input-section">
+                <label for="prompt">Enter your prompt:</label>
+                <textarea
+                    id="prompt"
+                    placeholder="Type your question or prompt here..."
+                    rows="4"
+                ></textarea>
+
+                <details class="suffix-section">
+                    <summary>View suffix text (appended to all prompts)</summary>
+                    <div class="suffix-content">
+                        <code>{{ suffix_text }}</code>
+                    </div>
+                </details>
+
+                <button id="submit-btn" onclick="submitQuery()">
+                    <span class="btn-text">Send Query</span>
+                    <span class="btn-loading" style="display: none;">
+                        <span class="spinner"></span>
+                        Processing...
+                    </span>
+                </button>
+            </section>
+
+            <section id="response-section" class="response-section" style="display: none;">
+                <h2>Response</h2>
+                <div id="response-content" class="response-content"></div>
+
+                <details class="full-prompt-section">
+                    <summary>View full prompt sent</summary>
+                    <pre id="full-prompt"></pre>
+                </details>
+            </section>
+
+            <section id="error-section" class="error-section" style="display: none;">
+                <div class="error-content">
+                    <strong>Error:</strong>
+                    <span id="error-message"></span>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>AI Query Interface &copy; 2025</p>
+        </footer>
+    </div>
+
+    <script>
+        async function submitQuery() {
+            const promptInput = document.getElementById('prompt');
+            const submitBtn = document.getElementById('submit-btn');
+            const btnText = submitBtn.querySelector('.btn-text');
+            const btnLoading = submitBtn.querySelector('.btn-loading');
+            const responseSection = document.getElementById('response-section');
+            const responseContent = document.getElementById('response-content');
+            const fullPrompt = document.getElementById('full-prompt');
+            const errorSection = document.getElementById('error-section');
+            const errorMessage = document.getElementById('error-message');
+
+            const prompt = promptInput.value.trim();
+
+            if (!prompt) {
+                showError('Please enter a prompt');
+                return;
+            }
+
+            // Show loading state
+            submitBtn.disabled = true;
+            btnText.style.display = 'none';
+            btnLoading.style.display = 'inline-flex';
+            errorSection.style.display = 'none';
+            responseSection.style.display = 'none';
+
+            try {
+                const response = await fetch('/query', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ prompt }),
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'An error occurred');
+                }
+
+                // Render markdown response
+                responseContent.innerHTML = marked.parse(data.response);
+                fullPrompt.textContent = data.full_prompt;
+                responseSection.style.display = 'block';
+
+                // Scroll to response
+                responseSection.scrollIntoView({ behavior: 'smooth' });
+
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                // Reset button state
+                submitBtn.disabled = false;
+                btnText.style.display = 'inline';
+                btnLoading.style.display = 'none';
+            }
+        }
+
+        function showError(message) {
+            const errorSection = document.getElementById('error-section');
+            const errorMessage = document.getElementById('error-message');
+            errorMessage.textContent = message;
+            errorSection.style.display = 'block';
+        }
+
+        // Allow Ctrl+Enter to submit
+        document.getElementById('prompt').addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'Enter') {
+                submitQuery();
+            }
+        });
+    </script>
+</body>
+</html>
