@@ -43,6 +43,15 @@
                 <h2>Response</h2>
                 <div id="response-content" class="response-content"></div>
 
+                <section id="documents-section" class="documents-section" style="display: none;">
+                    <h3>Downloaded Sources</h3>
+                    <p class="documents-info">
+                        <span id="docs-count">0</span> documents archived to
+                        <code id="docs-bucket"></code>
+                    </p>
+                    <ul id="documents-list" class="documents-list"></ul>
+                </section>
+
                 <details class="full-prompt-section">
                     <summary>View full prompt sent</summary>
                     <pre id="full-prompt"></pre>
@@ -108,6 +117,53 @@
                 fullPrompt.textContent = data.full_prompt;
                 responseSection.style.display = 'block';
 
+                // Display downloaded documents
+                const documentsSection = document.getElementById('documents-section');
+                const documentsList = document.getElementById('documents-list');
+                const docsCount = document.getElementById('docs-count');
+                const docsBucket = document.getElementById('docs-bucket');
+
+                if (data.documents && data.documents.length > 0) {
+                    documentsList.innerHTML = '';
+                    let successCount = 0;
+
+                    data.documents.forEach(doc => {
+                        const li = document.createElement('li');
+                        li.className = 'document-item ' + (doc.status === 'success' ? 'success' : 'error');
+
+                        if (doc.status === 'success') {
+                            successCount++;
+                            li.innerHTML = `
+                                <div class="doc-info">
+                                    <span class="doc-filename">${doc.filename}</span>
+                                    <span class="doc-size">${formatBytes(doc.size_bytes)}</span>
+                                </div>
+                                <div class="doc-details">
+                                    <a href="${doc.url}" target="_blank" class="doc-link">Original</a>
+                                    <code class="doc-gcs">${doc.gcs_uri}</code>
+                                </div>
+                            `;
+                        } else {
+                            li.innerHTML = `
+                                <div class="doc-info">
+                                    <span class="doc-filename doc-error">Failed to download</span>
+                                </div>
+                                <div class="doc-details">
+                                    <a href="${doc.url}" target="_blank" class="doc-link">${doc.url}</a>
+                                    <span class="doc-error-msg">${doc.error || 'Unknown error'}</span>
+                                </div>
+                            `;
+                        }
+                        documentsList.appendChild(li);
+                    });
+
+                    docsCount.textContent = successCount;
+                    docsBucket.textContent = data.bucket || 'N/A';
+                    documentsSection.style.display = 'block';
+                } else {
+                    documentsSection.style.display = 'none';
+                }
+
                 // Scroll to response
                 responseSection.scrollIntoView({ behavior: 'smooth' });
 
@@ -126,6 +182,14 @@
             const errorMessage = document.getElementById('error-message');
             errorMessage.textContent = message;
             errorSection.style.display = 'block';
+        }
+
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
         }
 
         // Allow Ctrl+Enter to submit
