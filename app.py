@@ -11,7 +11,7 @@ app = Flask(__name__)
 # Configuration
 PROJECT_ID = os.environ.get("GCP_PROJECT_ID", "your-project-id")
 LOCATION = os.environ.get("GCP_LOCATION", "us-central1")
-MODEL_NAME = os.environ.get("MODEL_NAME", "gemini-2.5-pro-preview-05-06")
+MODEL_NAME = os.environ.get("MODEL_NAME", "gemini-2.0-flash-001")
 PROMPT_SUFFIX = os.environ.get("PROMPT_SUFFIX", "Please provide a clear and concise response.")
 
 # Initialize Vertex AI
